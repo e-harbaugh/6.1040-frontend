@@ -4,6 +4,7 @@ import { formatDate } from "@/utils/formatDate";
 import { storeToRefs } from "pinia";
 import { fetchy } from "../../utils/fetchy";
 
+const loaded = ref(false);
 const props = defineProps(["post"]);
 const emit = defineEmits(["editPost", "refreshPosts"]);
 const { currentUsername } = storeToRefs(useUserStore());
@@ -16,6 +17,19 @@ const deletePost = async () => {
   }
   emit("refreshPosts");
 };
+
+async function getReplies(postid: string) {
+  try {
+    replies = await fetchy("/posts/" + postid + "/replies", "GET", {});
+  } catch (_) {
+    return;
+  }
+}
+
+onBeforeMount(async () => {
+  await getReplies(props.post._id);
+  loaded.value = true;
+});
 </script>
 
 <template>
@@ -31,6 +45,11 @@ const deletePost = async () => {
       <p v-else>Created on: {{ formatDate(props.post.dateCreated) }}</p>
     </article>
   </div>
+  <section class="posts" v-if="loaded && replies.length !== 0">
+    <article v-for="reply in replies" :key="reply._id">
+      <ReplyComponent reply="reply" />
+    </article>
+  </section>
 </template>
 
 <style scoped>
